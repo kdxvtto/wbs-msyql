@@ -1,16 +1,8 @@
-import dotenv from "dotenv";
+// Load environment variables FIRST - this must be the first import
+import "./config/env.js";
+
 import app from "./app.js";
-import path from "path";
-import { fileURLToPath } from "url";
 import pool from "./config/database.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Load environment variables
-if (!process.env.DB_HOST) {
-    const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.local";
-    dotenv.config({ path: path.resolve(__dirname, `../${envFile}`) });
-}
 
 const PORT = process.env.PORT || 3000;
 

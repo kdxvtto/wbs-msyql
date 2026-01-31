@@ -140,14 +140,14 @@ export default function ComplaintDetailPage() {
                 </p>
               </div>
 
-              {complaint.image && complaint.image.length > 0 && (
+              {complaint.images && complaint.images.length > 0 && (
                 <div>
                   <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                     <FileImage className="w-4 h-4" />
-                    Bukti Foto ({complaint.image.length})
+                    Bukti Foto ({complaint.images.length})
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {complaint.image.map((img, index) => {
+                    {complaint.images.map((img, index) => {
                       const imageUrl = img.startsWith('http') ? img : `http://localhost:3000${img}`
                       return (
                         <a

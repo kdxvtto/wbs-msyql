@@ -29,9 +29,10 @@
  */
 
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute, GuestRoute } from '@/components/organisms/ProtectedRoute'
 import { AdminLayout, UserLayout } from '@/layouts'
+import { useAuth } from '@/context/AuthContext'
 
 /**
  * =====================================================
@@ -59,7 +60,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
 const AdminLoginPage = lazy(() => import('@/pages/AdminLoginPage'))
 const AdminRegisterPage = lazy(() => import('@/pages/AdminRegisterPage'))
-const HubungiKamiPage = lazy(() => import('@/pages/HubungiKamiPage'))
+
 
 // Admin pages (hanya untuk Admin, Pimpinan, Staf)
 const DashboardPage = lazy(() => import('@/pages/admin/DashboardPage'))
@@ -127,6 +128,29 @@ function NotFoundPage() {
 }
 
 /**
+ * HOME REDIRECT COMPONENT
+ * Mengecek apakah user adalah Nasabah yang sudah login.
+ * Jika ya, redirect ke form pengaduan (/my-reports).
+ * Jika tidak (guest atau admin), tampilkan homepage.
+ */
+function HomeRedirect() {
+  const { user, isAuthenticated, loading } = useAuth()
+  
+  // Tampilkan loader saat mengecek autentikasi
+  if (loading) {
+    return <PageLoader />
+  }
+  
+  // Jika Nasabah sudah login, redirect ke form pengaduan
+  if (isAuthenticated && user?.role === 'Nasabah') {
+    return <Navigate to="/my-reports" replace />
+  }
+  
+  // Jika guest atau admin, tampilkan homepage
+  return <HomePage />
+}
+
+/**
  * =====================================================
  * MAIN APP COMPONENT
  * =====================================================
@@ -150,8 +174,8 @@ function App() {
             PUBLIC ROUTES
             Bisa diakses oleh siapa saja, login maupun tidak
         ===================================================== */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/hubungi-kami" element={<HubungiKamiPage />} />
+        <Route path="/" element={<HomeRedirect />} />
+
         
         {/* =====================================================
             GUEST ROUTES - USER AUTH

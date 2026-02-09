@@ -17,7 +17,7 @@ const navLinks = [
       { name: 'Unsur Pengaduan', key: 'unsur', icon: AlertCircle },
     ]
   },
-  { name: 'Hubungi Kami', href: '/hubungi-kami' },
+  { name: 'Hubungi Kami', href: '/#contact' },
 ]
 
 const dialogContent = {
@@ -253,6 +253,17 @@ export function Navbar() {
                     <Link
                       to={link.href}
                       className="px-5 py-2.5 text-base font-medium text-foreground/80 hover:text-foreground transition-colors rounded-lg hover:bg-accent"
+                      onClick={(e) => {
+                        if (link.href.includes('#')) {
+                          e.preventDefault()
+                          const id = link.href.split('#')[1]
+                          const element = document.getElementById(id)
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth' })
+                          }
+                          navigate('/')
+                        }
+                      }}
                     >
                       {link.name}
                     </Link>
@@ -361,7 +372,20 @@ export function Navbar() {
                     <Link
                       to={link.href}
                       className="block px-5 py-4 text-lg font-medium text-foreground/80 hover:text-foreground hover:bg-accent rounded-xl transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={(e) => {
+                        setMobileMenuOpen(false)
+                        if (link.href.includes('#')) {
+                          e.preventDefault()
+                          const id = link.href.split('#')[1]
+                          setTimeout(() => {
+                            const element = document.getElementById(id)
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth' })
+                            }
+                          }, 100)
+                          navigate('/')
+                        }
+                      }}
                     >
                       {link.name}
                     </Link>

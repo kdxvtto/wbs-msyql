@@ -19,9 +19,12 @@
  * 4. Jika logout → hapus token & reset data user
  */
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '@/services/api'
+
+// Session timeout dalam milidetik (15 menit)
+const SESSION_TIMEOUT = 15 * 60 * 1000 // 15 menit
 
 // Membuat Context baru untuk autentikasi
 // null = nilai default jika tidak ada Provider
@@ -118,13 +121,11 @@ export function AuthProvider({ children }) {
    * LOGOUT - Proses logout user
    * 
    * CATATAN PENTING:
-   * - Fungsi ini TIDAK melakukan navigate
+   * - Menggunakan useCallback agar bisa dipakai di useEffect tanpa infinite loop
    * - Navigasi ditangani oleh komponen yang memanggil (AdminLayout/UserLayout)
-   * - Ini karena setiap layout punya tujuan redirect berbeda:
-   *   - AdminLayout → /hanomanbpr/login
-   *   - UserLayout → /login
+   * - Untuk auto-logout karena inactivity, akan redirect ke login page
    */
-  const logout = async () => {
+  const logout = useCallback(async (autoLogout = false) => {
     try {
       // Beritahu server untuk invalidate token (opsional, ada blacklist)
       await api.post('/auth/logout')
@@ -133,11 +134,98 @@ export function AuthProvider({ children }) {
     } finally {
       // Hapus token dari localStorage
       localStorage.removeItem('token')
+      // Hapus timestamp aktivitas terakhir
+      localStorage.removeItem('lastActivity')
       // Reset state user ke null (trigger re-render di seluruh app)
       setUser(null)
-      // Navigation is handled by the calling component (AdminLayout or UserLayout)
+      
+      // Jika auto-logout karena inactivity, redirect ke halaman login
+      if (autoLogout) {
+        navigate('/login', { 
+          state: { message: 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 15 menit.' }
+        })
+      }
+      // Untuk manual logout, navigasi ditangani oleh komponen yang memanggil
     }
-  }
+  }, [navigate])
+  
+  // Ref untuk menyimpan timeout ID
+  const inactivityTimeoutRef = useRef(null)
+  
+  /**
+   * INACTIVITY TRACKER
+   * Mendeteksi aktivitas user dan auto-logout setelah 15 menit tidak aktif.
+   * 
+   * CARA KERJA:
+   * 1. Saat ada aktivitas (click, scroll, keypress, mousemove), reset timer
+   * 2. Timer dihitung mundur dari 15 menit
+   * 3. Jika timer habis tanpa ada aktivitas baru, auto logout
+   */
+  useEffect(() => {
+    // Hanya jalankan jika user sudah login
+    if (!user) return
+    
+    /**
+     * Reset timer inactivity
+     * Dipanggil setiap kali ada aktivitas user
+     */
+    const resetInactivityTimer = () => {
+      // Simpan timestamp aktivitas terakhir
+      localStorage.setItem('lastActivity', Date.now().toString())
+      
+      // Clear timeout sebelumnya
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current)
+      }
+      
+      // Set timeout baru untuk 15 menit
+      inactivityTimeoutRef.current = setTimeout(() => {
+        console.log('Session timeout: Auto logout karena tidak ada aktivitas')
+        logout(true) // true = auto logout, akan redirect ke login
+      }, SESSION_TIMEOUT)
+    }
+    
+    /**
+     * Cek apakah sesi sudah expired saat halaman dimuat
+     * (misal user buka tab baru setelah lama tidak buka)
+     */
+    const checkSessionOnLoad = () => {
+      const lastActivity = localStorage.getItem('lastActivity')
+      if (lastActivity) {
+        const timeSinceLastActivity = Date.now() - parseInt(lastActivity, 10)
+        if (timeSinceLastActivity > SESSION_TIMEOUT) {
+          console.log('Session sudah expired, auto logout')
+          logout(true)
+          return false
+        }
+      }
+      return true
+    }
+    
+    // Cek sesi saat pertama kali load
+    if (!checkSessionOnLoad()) return
+    
+    // Daftar event yang menandakan aktivitas user
+    const activityEvents = ['click', 'scroll', 'keypress', 'mousemove', 'touchstart']
+    
+    // Pasang event listener untuk setiap event
+    activityEvents.forEach(event => {
+      window.addEventListener(event, resetInactivityTimer, { passive: true })
+    })
+    
+    // Mulai timer pertama kali
+    resetInactivityTimer()
+    
+    // Cleanup: hapus event listeners dan clear timeout saat unmount
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, resetInactivityTimer)
+      })
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current)
+      }
+    }
+  }, [user, logout])
 
   /**
    * VALUE OBJECT

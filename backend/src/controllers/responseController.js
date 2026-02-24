@@ -1,17 +1,37 @@
 import Response from "../models/Response.js";
 import Complaint from "../models/Complaint.js";
 import { createActivityLog } from "./activityLogController.js";
+import { sanitize, sanitizeObject } from "../utils/sanitize.js";
+
+const respondServerError = (res, context, error) => {
+    console.error(`[${context}]`, error);
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+};
 
 export const getAllResponse = async (req, res) => {
     try {
         const { idComplaint } = req.query;
+        const isNasabah = req.user.role === "Nasabah";
         let responses;
         
         if (idComplaint) {
             const complaintId = parseInt(idComplaint);
-            responses = await Response.findByComplaintId(complaintId);
+            if (isNaN(complaintId)) {
+                return res.status(400).json({
+                    success : false,
+                    message : "Complaint id is invalid"
+                });
+            }
+            responses = isNasabah
+                ? await Response.findByComplaintIdAndUser(complaintId, req.user.id)
+                : await Response.findByComplaintId(complaintId);
         } else {
-            responses = await Response.findAll();
+            responses = isNasabah
+                ? await Response.findAllByUserId(req.user.id)
+                : await Response.findAll();
         }
         
         res.status(200).json({
@@ -20,10 +40,7 @@ export const getAllResponse = async (req, res) => {
             data : responses
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getAllResponse", error);
     }
 }
 
@@ -37,7 +54,9 @@ export const getResponseById = async (req, res) => {
                 message : "Response id is invalid"
             });
         }
-        const response = await Response.findById(responseId);
+        const response = req.user.role === "Nasabah"
+            ? await Response.findByIdAndUser(responseId, req.user.id)
+            : await Response.findById(responseId);
         if (!response) {
             return res.status(404).json({
                 success : false,
@@ -50,16 +69,16 @@ export const getResponseById = async (req, res) => {
             data : response
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getResponseById", error);
     }
 }
 
 export const createResponse = async (req, res) => {
     try {
-        const { idComplaint, status, progress, response: responseText } = req.body;
+        const { idComplaint, status: rawStatus, progress: rawProgress, response: rawResponseText } = req.body;
+        const status = sanitize(rawStatus);
+        const progress = sanitize(rawProgress);
+        const responseText = sanitize(rawResponseText);
         const complaintId = parseInt(idComplaint);
         if(isNaN(complaintId)){
             return res.status(400).json({
@@ -111,10 +130,7 @@ export const createResponse = async (req, res) => {
             data : newResponse
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "createResponse", error);
     }
 }
 
@@ -137,7 +153,13 @@ export const updateResponse = async (req, res) => {
             });
         }
         
-        await Response.update(responseId, req.body);
+        const updated = await Response.update(responseId, sanitizeObject(req.body));
+        if (!updated) {
+            return res.status(400).json({
+                success : false,
+                message : "No valid fields to update"
+            });
+        }
         const response = await Response.findById(responseId);
         
         // Log activity
@@ -156,10 +178,7 @@ export const updateResponse = async (req, res) => {
             data : response
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "updateResponse", error);
     }
 }
 
@@ -200,9 +219,6 @@ export const deleteResponse = async (req, res) => {
             data : response
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "deleteResponse", error);
     }
 }

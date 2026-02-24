@@ -1,5 +1,14 @@
 import Category from "../models/Category.js";
 import { createActivityLog } from "./activityLogController.js";
+import { sanitize } from "../utils/sanitize.js";
+
+const respondServerError = (res, context, error) => {
+    console.error(`[${context}]`, error);
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+};
 
 export const getAllCategory = async (req, res) => {
     try {
@@ -10,10 +19,7 @@ export const getAllCategory = async (req, res) => {
             data : categories
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getAllCategory", error);
     }
 }
 
@@ -40,16 +46,14 @@ export const getCategoryById = async (req, res) => {
             data : category
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getCategoryById", error);
     }
 }
 
 export const createCategory = async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name: rawName } = req.body;
+        const name = sanitize(rawName);
         if (!name) {
             return res.status(400).json({
                 success : false,
@@ -85,10 +89,7 @@ export const createCategory = async (req, res) => {
             data : category
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "createCategory", error);
     }
 }
 
@@ -103,7 +104,8 @@ export const updateCategory = async (req, res) => {
             });
         }
         
-        const { name } = req.body;
+        const { name: rawName } = req.body;
+        const name = sanitize(rawName);
         
         // Check if category name already exists (excluding current)
         const existingCategory = await Category.findByName(name);
@@ -140,10 +142,7 @@ export const updateCategory = async (req, res) => {
             data : category
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "updateCategory", error);
     }
 }
 
@@ -184,9 +183,6 @@ export const deleteCategory = async (req, res) => {
             data : category
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "deleteCategory", error);
     }
 }

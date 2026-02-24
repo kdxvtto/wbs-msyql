@@ -58,6 +58,14 @@ const User = {
         return rows[0];
     },
 
+    // READ - Ambil user by refresh token hash
+    async findByRefreshToken(refreshTokenHash) {
+        const [rows] = await pool.execute(
+            'SELECT * FROM users WHERE refresh_token = ?', [refreshTokenHash]
+        );
+        return rows[0];
+    },
+
     // READ - Cari user dengan OR condition (untuk cek duplikat)
     async findByEmailOrUsernameOrNikOrPhone(email, username, nik, phone) {
         const [rows] = await pool.execute(

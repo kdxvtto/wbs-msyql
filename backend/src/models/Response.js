@@ -50,6 +50,46 @@ const Response = {
         return rows;
     },
 
+    // READ - Ambil responses untuk complaint milik user tertentu
+    async findAllByUserId(userId) {
+        const [rows] = await pool.execute(`
+            SELECT r.*, u.name as user_name, u.role as user_role,
+                   c.description as complaint_description, c.status as complaint_status, c.location as complaint_location
+            FROM responses r
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN complaints c ON r.complaint_id = c.id
+            WHERE c.user_id = ?
+            ORDER BY r.created_at DESC
+        `, [userId]);
+        return rows;
+    },
+
+    // READ - Ambil response by ID untuk complaint milik user tertentu
+    async findByIdAndUser(responseId, userId) {
+        const [rows] = await pool.execute(`
+            SELECT r.*, u.name as user_name, u.role as user_role,
+                   c.description as complaint_description, c.status as complaint_status, c.location as complaint_location
+            FROM responses r
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN complaints c ON r.complaint_id = c.id
+            WHERE r.id = ? AND c.user_id = ?
+        `, [responseId, userId]);
+        return rows[0];
+    },
+
+    // READ - Ambil responses by complaint untuk user tertentu
+    async findByComplaintIdAndUser(complaintId, userId) {
+        const [rows] = await pool.execute(`
+            SELECT r.*, u.name as user_name, u.role as user_role
+            FROM responses r
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN complaints c ON r.complaint_id = c.id
+            WHERE r.complaint_id = ? AND c.user_id = ?
+            ORDER BY r.created_at DESC
+        `, [complaintId, userId]);
+        return rows;
+    },
+
     // READ - Ambil latest response by Complaint ID
     async findLatestByComplaintId(complaintId) {
         const [rows] = await pool.execute(`
@@ -67,9 +107,10 @@ const Response = {
     async update(id, data) {
         const fields = [];
         const values = [];
+        const allowedFields = new Set(["status", "progress", "response"]);
 
         Object.keys(data).forEach(key => {
-            if (data[key] !== undefined) {
+            if (allowedFields.has(key) && data[key] !== undefined) {
                 fields.push(`${key} = ?`);
                 values.push(data[key]);
             }

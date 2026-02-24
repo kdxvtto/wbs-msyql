@@ -20,11 +20,6 @@ export const corsMiddleware = cors({
       return callback(null, true);
     }
     
-    // Allow all Vercel preview deployments
-    if (origin.includes('.vercel.app')) {
-      return callback(null, true);
-    }
-    
     // Allow bankwonogiri.co.id domain
     if (origin.includes('bankwonogiri.co.id')) {
       return callback(null, true);

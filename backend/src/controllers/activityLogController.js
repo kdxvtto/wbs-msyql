@@ -20,7 +20,8 @@ export const createActivityLog = async ({ action, resource, resource_name, resou
 // Get recent activity logs
 export const getActivityLogs = async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 10;
+        const parsedLimit = Number.parseInt(req.query.limit, 10);
+        const limit = Number.isNaN(parsedLimit) ? 10 : Math.min(Math.max(parsedLimit, 1), 100);
         const logs = await ActivityLog.findAll(limit);
         
         res.status(200).json({
@@ -28,9 +29,10 @@ export const getActivityLogs = async (req, res) => {
             data: logs
         });
     } catch (error) {
+        console.error("[getActivityLogs]", error);
         res.status(500).json({
             success: false,
-            message: error.message
+            message: "Internal Server Error"
         });
     }
 };

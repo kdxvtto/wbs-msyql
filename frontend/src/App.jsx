@@ -199,7 +199,7 @@ function App() {
             <AdminLoginPage />
           </GuestRoute>
         } />
-        <Route path="/hanomanbpr/register" element={
+        <Route path="/freyabpr/register" element={
           <GuestRoute>
             <AdminRegisterPage />
           </GuestRoute>

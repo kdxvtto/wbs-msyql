@@ -9,10 +9,10 @@ import {globalRateLimiter} from "./middleware/rateLimiter.js";
 import {corsMiddleware} from "./middleware/cors.js";
 import {helmetMiddleware} from "./middleware/helmet.js";
 
-// Hidden admin route imports
-import { register, login } from "./controllers/authController.js";
+// Legacy hidden admin login alias (kept temporarily for frontend compatibility)
+import { login, registerAdmin } from "./controllers/authController.js";
 import { validate } from "./middleware/validate.js";
-import { registerAdminSchema, adminLoginSchema } from "./validations/authValidator.js";
+import { adminLoginSchema, registerAdminSchema } from "./validations/authValidator.js";
 import { loginRateLimiter, registerRateLimiter } from "./middleware/rateLimiter.js";
 
 // import Routes
@@ -60,9 +60,9 @@ app.use("/api/complaint", complaintRoutes);
 app.use("/api/response", responseRoutes);
 app.use("/api/user", userRoutes);
 
-// Hidden admin routes - path tersembunyi untuk akses admin
-app.post("/api/hanomanbpr/register", registerRateLimiter, validate(registerAdminSchema), register);
+// Legacy admin login alias - keep temporarily while frontend migrates to /api/auth/login/admin
 app.post("/api/hanomanbpr/login", loginRateLimiter, validate(adminLoginSchema), login);
+app.post("/api/freyabpr/register", registerRateLimiter, validate(registerAdminSchema), registerAdmin);
 
 // 404 Handler
 app.use((req, res) => {
@@ -77,7 +77,7 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.statusCode || 500).json({
         success: false,
-        message: err.message || "Internal Server Error"
+        message: "Internal Server Error"
     });
 });
 

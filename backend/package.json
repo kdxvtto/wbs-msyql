@@ -27,6 +27,7 @@
     "mysql2": "^3.16.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "xss": "^1.0.15",
     "zod": "^4.3.5"
   },
   "engines": {

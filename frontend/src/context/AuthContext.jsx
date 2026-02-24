@@ -112,7 +112,7 @@ export function AuthProvider({ children }) {
    * @param {string} type - 'admin' atau 'user'
    */
   const register = async (userData, type = 'admin') => {
-    const endpoint = type === 'admin' ? '/hanomanbpr/register' : '/auth/register/user'
+    const endpoint = type === 'admin' ? '/freyabpr/register' : '/auth/register/user'
     const response = await api.post(endpoint, userData)
     return response.data
   }

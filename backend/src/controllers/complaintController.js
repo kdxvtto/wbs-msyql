@@ -2,15 +2,28 @@ import Complaint from "../models/Complaint.js";
 import ComplaintImage from "../models/ComplaintImage.js";
 import { deleteCloudinaryImage, getPublicIdFromUrl } from "../config/cloudinary.js";
 import { createActivityLog } from "./activityLogController.js";
+import { sanitize } from "../utils/sanitize.js";
+
+const respondServerError = (res, context, error) => {
+    console.error(`[${context}]`, error);
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+};
 
 export const getAllComplaint = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const parsedPage = Number.parseInt(req.query.page, 10);
+        const parsedLimit = Number.parseInt(req.query.limit, 10);
+        const page = Number.isNaN(parsedPage) ? 1 : Math.max(parsedPage, 1);
+        const limit = Number.isNaN(parsedLimit) ? 10 : Math.min(Math.max(parsedLimit, 1), 100);
         const offset = (page - 1) * limit;
-        
-        // Get complaints with pagination (need custom query for limit/offset)
-        const complaints = await Complaint.findAll();
+        const isNasabah = req.user.role === "Nasabah";
+
+        const complaints = isNasabah
+            ? await Complaint.findByUserId(req.user.id)
+            : await Complaint.findAll();
         const paginatedComplaints = complaints.slice(offset, offset + limit);
         
         // Get images for each complaint
@@ -19,7 +32,9 @@ export const getAllComplaint = async (req, res) => {
             complaint.images = images.map(img => img.image_url);
         }
         
-        const totalComplaint = await Complaint.count();
+        const totalComplaint = isNasabah
+            ? await Complaint.countByUser(req.user.id)
+            : await Complaint.count();
         const totalPages = Math.ceil(totalComplaint / limit);
         
         res.status(200).json({
@@ -32,10 +47,7 @@ export const getAllComplaint = async (req, res) => {
             limit
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getAllComplaint", error);
     }
 }
 
@@ -49,7 +61,9 @@ export const getComplaintById = async (req, res) => {
                 message : "Complaint id is invalid"
             });
         }
-        const complaint = await Complaint.findById(complaintId);
+        const complaint = req.user.role === "Nasabah"
+            ? await Complaint.findByIdAndUser(complaintId, req.user.id)
+            : await Complaint.findById(complaintId);
         if (!complaint) {
             return res.status(404).json({
                 success : false,
@@ -67,17 +81,17 @@ export const getComplaintById = async (req, res) => {
             data : complaint
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getComplaintById", error);
     }
 }
 
 export const createComplaint = async (req, res) => {
     const imagePaths = req.files ? req.files.map(f => f.path) : [];
     try {
-        const { category, location, condition, description } = req.body;
+        const { category, location: rawLocation, condition: rawCondition, description: rawDescription } = req.body;
+        const location = sanitize(rawLocation);
+        const condition = sanitize(rawCondition);
+        const description = sanitize(rawDescription);
         if (!category || !location || !condition || !description) {
             return res.status(400).json({
                 success : false,
@@ -125,9 +139,9 @@ export const createComplaint = async (req, res) => {
                 deleteCloudinaryImage(public_id);
             }
         }
-        res.status(500).json({
+        return res.status(500).json({
             success : false,
-            message : error.message
+            message : "Internal Server Error"
         });
     }
 }
@@ -172,10 +186,10 @@ export const updateComplaint = async (req, res) => {
         // Update complaint fields
         const updateData = {};
         if (req.body.category) updateData.category_id = parseInt(req.body.category);
-        if (req.body.location) updateData.location = req.body.location;
-        if (req.body.condition) updateData.condition = req.body.condition;
-        if (req.body.description) updateData.description = req.body.description;
-        if (req.body.status) updateData.status = req.body.status;
+        if (req.body.location) updateData.location = sanitize(req.body.location);
+        if (req.body.condition) updateData.condition = sanitize(req.body.condition);
+        if (req.body.description) updateData.description = sanitize(req.body.description);
+        if (req.body.status) updateData.status = sanitize(req.body.status);
         
         await Complaint.update(complaintId, updateData);
         
@@ -221,9 +235,9 @@ export const updateComplaint = async (req, res) => {
                 deleteCloudinaryImage(public_id);
             }
         }
-        res.status(500).json({
+        return res.status(500).json({
             success : false,
-            message : error.message
+            message : "Internal Server Error"
         });
     }
 }
@@ -275,9 +289,6 @@ export const deleteComplaint = async (req, res) => {
             data : complaint
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "deleteComplaint", error);
     }
 }

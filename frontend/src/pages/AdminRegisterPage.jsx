@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { Button, Input, Label } from '@/components/atoms'
 import { Card, CardContent } from '@/components/molecules'
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, ShieldX } from 'lucide-react'
 
 export default function AdminRegisterPage() {
   const [formData, setFormData] = useState({
@@ -15,6 +15,7 @@ export default function AdminRegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [registrationClosed, setRegistrationClosed] = useState(false)
   
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -47,10 +48,52 @@ export default function AdminRegisterPage() {
       await register({ ...registerData, role: 'Admin' }, 'admin')
       navigate('/hanomanbpr/login', { state: { message: 'Registrasi berhasil! Silakan login.' } })
     } catch (err) {
-      setError(err.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.')
+      // Jika backend return 403, artinya admin sudah ada
+      if (err.response?.status === 403) {
+        setRegistrationClosed(true)
+      } else {
+        setError(err.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  // Admin sudah ada - tampilkan pesan tertutup
+  if (registrationClosed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-rose-50 p-4">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-red-100/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-rose-100/50 rounded-full blur-3xl" />
+        
+        <div className="relative w-full max-w-md">
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Kembali ke Beranda
+          </Link>
+
+          <Card className="shadow-2xl border-0">
+            <CardContent className="p-8">
+              <div className="text-center">
+                <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+                  <ShieldX className="w-8 h-8 text-destructive" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground mb-2">Registrasi Ditutup</h1>
+                <p className="text-muted-foreground text-sm">
+                  Registrasi admin sudah ditutup karena admin sudah terdaftar.
+                </p>
+                <Link
+                  to="/hanomanbpr/login"
+                  className="inline-block mt-6 text-primary font-medium hover:underline text-sm"
+                >
+                  Masuk sebagai Admin →
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (

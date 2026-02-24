@@ -1,5 +1,14 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import { sanitize, sanitizeObject } from "../utils/sanitize.js";
+
+const respondServerError = (res, context, error) => {
+    console.error(`[${context}]`, error);
+    return res.status(500).json({
+        success: false,
+        message: "Internal Server Error"
+    });
+};
 
 export const getAllUser = async (req, res) => {
     try {
@@ -30,10 +39,7 @@ export const getAllUser = async (req, res) => {
             limit
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getAllUser", error);
     }
 }
 
@@ -63,16 +69,18 @@ export const getUserById = async (req, res) => {
             data : user
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "getUserById", error);
     }
 }
 
 export const createUser = async (req, res) => {
     try {
-        const { nik, name, username, email, password, phone, role } = req.body;
+        const { nik: rawNik, name: rawName, username: rawUsername, email: rawEmail, password, phone: rawPhone, role } = req.body;
+        const nik = sanitize(rawNik);
+        const name = sanitize(rawName);
+        const username = sanitize(rawUsername);
+        const email = sanitize(rawEmail);
+        const phone = sanitize(rawPhone);
         
         if(role === "Admin" || role === "Pimpinan" || role === "Staf"){
             if( !name || !username || !password){
@@ -139,10 +147,7 @@ export const createUser = async (req, res) => {
             data : user
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "createUser", error);
     }
 }
 
@@ -179,7 +184,7 @@ export const updateUser = async (req, res) => {
         }
         
         // Hash password if provided
-        const updateData = { ...req.body };
+        const updateData = sanitizeObject({ ...req.body }, ['password']);
         if (updateData.password) {
             updateData.password = await bcrypt.hash(updateData.password, 10);
         }
@@ -202,10 +207,7 @@ export const updateUser = async (req, res) => {
             data : user
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "updateUser", error);
     }
 }
 
@@ -238,9 +240,6 @@ export const deleteUser = async (req, res) => {
             data : user
         });
     } catch (error) {
-        res.status(500).json({
-            success : false,
-            message : error.message
-        });
+        return respondServerError(res, "deleteUser", error);
     }
 }

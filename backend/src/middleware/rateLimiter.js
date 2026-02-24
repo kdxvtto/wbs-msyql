@@ -10,7 +10,7 @@ export const globalRateLimiter = rateLimit({
 
 export const loginRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"
@@ -18,7 +18,7 @@ export const loginRateLimiter = rateLimit({
 
 export const registerRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"
@@ -26,7 +26,7 @@ export const registerRateLimiter = rateLimit({
 
 export const resetPasswordRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"
@@ -34,7 +34,7 @@ export const resetPasswordRateLimiter = rateLimit({
 
 export const verifyEmailRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"
@@ -42,7 +42,7 @@ export const verifyEmailRateLimiter = rateLimit({
 
 export const forgotPasswordRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"
@@ -50,7 +50,7 @@ export const forgotPasswordRateLimiter = rateLimit({
 
 export const changePasswordRateLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max : 100,
+    max : 10,
     standardHeaders : true,
     legacyHeaders : false,
     message : "Too many requests from this IP, please try again after 15 minutes"

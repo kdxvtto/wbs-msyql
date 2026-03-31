@@ -38,6 +38,10 @@ export const corsMiddleware = cors({
   origin: (origin, callback) => {
     const allowedOrigins = getAllowedOrigins();
     const normalizedOrigin = normalizeOrigin(origin);
+
+    if (allowedOrigins.includes("*")) {
+      return callback(null, true);
+    }
     
     // Allow requests with no origin (mobile apps, Postman, etc)
     if (!origin) {

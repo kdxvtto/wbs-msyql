@@ -30,6 +30,9 @@ const SESSION_TIMEOUT = 15 * 60 * 1000 // 15 menit
 // null = nilai default jika tidak ada Provider
 const AuthContext = createContext(null)
 
+const getResponsePayload = (response) =>
+  response?.data?.data ?? response?.data?.payload ?? response?.data ?? {}
+
 /**
  * AUTH PROVIDER COMPONENT
  * Komponen ini membungkus seluruh aplikasi (di main.jsx)
@@ -70,7 +73,8 @@ export function AuthProvider({ children }) {
     try {
       // GET request ke /auth/profile dengan token di header (otomatis dari api.js)
       const response = await api.get('/auth/profile')
-      setUser(response.data.data) // Simpan data user ke state
+      const payload = getResponsePayload(response)
+      setUser(payload.user ?? payload) // Simpan data user ke state
     } catch (error) {
       // Jika token invalid/expired, hapus dan reset state
       localStorage.removeItem('token')
@@ -93,9 +97,15 @@ export function AuthProvider({ children }) {
     
     // POST request dengan credentials
     const response = await api.post(endpoint, credentials)
-    
-    // Destructuring: ambil token dan user dari response
-    const { token, user: userData } = response.data.data
+
+    // Ambil payload login (support format data/payload)
+    const payload = getResponsePayload(response)
+    const token = payload.token || payload.accessToken
+    const userData = payload.user ?? payload
+
+    if (!token || !userData?.id) {
+      throw new Error('Invalid login response format')
+    }
     
     // Simpan token ke localStorage (persistent storage di browser)
     localStorage.setItem('token', token)

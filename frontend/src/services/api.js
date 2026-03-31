@@ -43,6 +43,9 @@ import axios from "axios";
  */
 const API_URL = import.meta.env.VITE_API_URL || "/api";
 
+const getResponsePayload = (response) =>
+  response?.data?.data ?? response?.data?.payload ?? response?.data ?? {};
+
 /**
  * AXIOS INSTANCE
  * 
@@ -136,8 +139,12 @@ api.interceptors.response.use(
           withCredentials: true,
         });
         
-        // Ambil access token baru dari response
-        const { accessToken } = response.data.data;
+        // Ambil access token baru dari response (support format data/payload)
+        const payload = getResponsePayload(response);
+        const accessToken = payload.accessToken || payload.token;
+        if (!accessToken) {
+          throw new Error("Invalid refresh token response");
+        }
         
         // Simpan token baru ke localStorage
         localStorage.setItem("token", accessToken);

@@ -58,13 +58,12 @@ export const corsMiddleware = cors({
       return callback(null, true);
     }
 
-    const corsError = new Error("Not allowed by CORS");
-    corsError.statusCode = 403;
-
+    // Temporary fail-open for production incident:
+    // if request still gets "Not allowed by CORS" after deploy, server is running old code.
     console.warn(
-      `[CORS] Blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(", ")}`
+      `[CORS_FAIL_OPEN_ACTIVE_20260331] Unmatched origin allowed temporarily: ${origin}. Allowed origins: ${allowedOrigins.join(", ")}`
     );
-    return callback(corsError, false);
+    return callback(null, true);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

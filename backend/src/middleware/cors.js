@@ -4,6 +4,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:4173",
+  "https://wbs.bankwonogiri.co.id",
 ];
 
 const normalizeOrigin = (origin = "") => origin.trim().replace(/\/+$/, "");
@@ -41,14 +42,19 @@ export const corsMiddleware = cors({
     if (allowedOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
-    
+
     // Allow bankwonogiri.co.id and subdomains
     if (isBankWonogiriHostname(normalizedOrigin)) {
       return callback(null, true);
     }
-    
-    console.warn(`[CORS] Blocked origin: ${origin}`);
-    return callback(new Error("Not allowed by CORS"), false);
+
+    const corsError = new Error("Not allowed by CORS");
+    corsError.statusCode = 403;
+
+    console.warn(
+      `[CORS] Blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(", ")}`
+    );
+    return callback(corsError, false);
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

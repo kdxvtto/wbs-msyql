@@ -8,6 +8,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 const normalizeOrigin = (origin = "") => origin.trim().replace(/\/+$/, "");
+const BANKWONOGIRI_ORIGIN_REGEX =
+  /^https?:\/\/([a-z0-9-]+\.)*bankwonogiri\.co\.id(?::\d+)?$/i;
 
 const getAllowedOrigins = () =>
   (process.env.CORS_ORIGINS
@@ -17,6 +19,10 @@ const getAllowedOrigins = () =>
     .filter(Boolean);
 
 const isBankWonogiriHostname = (origin) => {
+  if (BANKWONOGIRI_ORIGIN_REGEX.test(origin)) {
+    return true;
+  }
+
   try {
     const hostname = new URL(origin).hostname.toLowerCase();
     return (
